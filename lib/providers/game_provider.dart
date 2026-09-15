@@ -18,7 +18,8 @@ import 'player_provider.dart';
 ///  * Three or more touching tiles with the same number merge into the dropped
 ///    cell, doubling its value. Merges chain into combos.
 ///  * Merges give score and XP; reaching the goal tile or filling the XP bar
-///    rewards coins, which buy boosters (undo, smash, shuffle, revive).
+///    rewards diamonds. Boosters (undo, smash, shuffle) cost diamonds or a
+///    video ad; continuing after game over needs a video ad.
 ///  * The game ends when none of the remaining pieces has room on the board.
 class GameProvider extends ChangeNotifier {
   GameProvider(this._prefs, this._player, this._audio) {
@@ -31,12 +32,20 @@ class GameProvider extends ChangeNotifier {
   final math.Random _rng = math.Random();
 
   static const int boardRadius = 3;
+
+  /// Diamond prices (each can also be paid by watching a video ad).
+  static const int costUndo = 10;
+  static const int costSmash = 20;
+  static const int costShuffle = 20;
+  static const int costContinue = 40;
   static const int traySize = 3;
-  static const int costUndo = 40;
-  static const int costHammer = 60;
-  static const int costRefresh = 30;
-  static const int costRevive = 120;
   static const _saveKey = 'savedGame';
+
+  // The player's level and goal live outside the saved game, so they survive
+  // game overs, restarts and new games. "Reset progress" clears them.
+  static const levelKey = 'currentLevel';
+  static const goalKey = 'currentGoal';
+  static const xpKey = 'currentXp';
 
   /// How many touching equal tiles are needed for a merge.
   static const int mergeCount = 3;
@@ -101,12 +110,22 @@ class GameProvider extends ChangeNotifier {
   bool canPlace(Piece piece, HexCoord anchor) => piece.cellsAt(anchor).every(isEmpty);
 
   // ------------------------------------------------------------- lifecycle
+  /// Starts a new game (New Game or Restart): only the board, score and
+  /// pieces are cleared. The player stays on the same level with the same
+  /// level-bar progress and goal (so goal rewards can't be farmed).
   void newGame() {
     _reset();
+    _level = _prefs.getInt(levelKey) ?? 1;
+    _xp = _prefs.getInt(xpKey) ?? 0;
+    _goal = _prefs.getInt(goalKey) ?? 32;
+    _dealTray(); // deal again so pieces match the level
     _player.gameStarted();
     _save();
     notifyListeners();
   }
+
+  /// Restart button (same as a new game at the current level).
+  void restartLevel() => newGame();
 
   void _reset() {
     _board.clear();
@@ -256,7 +275,7 @@ class GameProvider extends ChangeNotifier {
     if (value < _goal) return;
     while (value >= _goal) {
       final reward = 10 + _log2(_goal) * 4;
-      _player.addCoins(reward);
+      _player.addDiamonds(reward);
       _events.add(GoalReachedEvent(_goal, reward));
       _goal *= 2;
     }
@@ -268,8 +287,8 @@ class GameProvider extends ChangeNotifier {
     while (_xp >= xpToNext) {
       _xp -= xpToNext;
       _level++;
-      final reward = 10 + _level * 2;
-      _player.addCoins(reward);
+      final reward = 5 + _level; // level 2 -> 7, level 10 -> 15
+      _player.addDiamonds(reward);
       _events.add(LevelUpEvent(_level, reward));
       _audio.play(Sfx.levelUp);
     }
@@ -313,18 +332,13 @@ class GameProvider extends ChangeNotifier {
   }
 
   // --------------------------------------------------------------- boosters
-  bool _spend(int cost) {
-    if (_player.trySpend(cost)) {
-      _audio.play(Sfx.coin, volume: 0.7);
-      return true;
-    }
-    _audio.play(Sfx.error, volume: 0.5);
-    _events.add(const NotEnoughCoinsEvent());
-    return false;
-  }
+  // Boosters are paid by the UI (diamonds or a video ad) before calling these.
+
+  bool get canSmash => !_busy && !_gameOver && _board.isNotEmpty;
+  bool get canShuffle => !_busy && !_gameOver;
 
   void undo() {
-    if (!canUndo || !_spend(costUndo)) return;
+    if (!canUndo) return;
     _undo!.restoreInto(this);
     _undo = null;
     _gameOver = false;
@@ -336,10 +350,11 @@ class GameProvider extends ChangeNotifier {
 
   /// Deals a brand new set of three pieces.
   void refreshPieces() {
-    if (_busy || _gameOver || !_spend(costRefresh)) return;
+    if (!canShuffle) return;
     _hammerMode = false;
     _dealTray();
     _checkGameOver();
+    _audio.play(Sfx.click);
     _save();
     notifyListeners();
   }
@@ -351,9 +366,6 @@ class GameProvider extends ChangeNotifier {
     } else if (_board.isEmpty) {
       _audio.play(Sfx.error, volume: 0.5);
       return;
-    } else if (_player.coins < costHammer) {
-      _spend(costHammer); // emits the "not enough coins" feedback
-      return;
     } else {
       _hammerMode = true;
       _audio.play(Sfx.click);
@@ -363,7 +375,6 @@ class GameProvider extends ChangeNotifier {
 
   Future<void> smash(HexCoord cell) async {
     if (!_hammerMode || _busy || !_board.containsKey(cell)) return;
-    if (!_spend(costHammer)) return;
     _hammerMode = false;
     _undo = null;
     await _removeTiles([cell]);
@@ -377,11 +388,27 @@ class GameProvider extends ChangeNotifier {
 
   /// Continue after game over by clearing the smallest tiles.
   Future<void> revive() async {
-    if (!_gameOver || !_spend(costRevive)) return;
+    if (!_gameOver) return;
     _gameOver = false;
     final sorted = _board.values.toList()..sort((a, b) => a.value - b.value);
     await _removeTiles(sorted.take(7).map((t) => t.pos).toList());
+    _dealRescueTray();
     _endTurn();
+  }
+
+  /// After a paid Continue: replaces the stuck pieces with 3 new ones that
+  /// each have room on the board, so the player is never left holding a
+  /// piece that can't be placed.
+  void _dealRescueTray() {
+    _tray = [for (var i = 0; i < traySize; i++) _fittingPiece()];
+  }
+
+  Piece _fittingPiece() {
+    for (var attempt = 0; attempt < 40; attempt++) {
+      final piece = _generatePiece();
+      if (_fits(piece)) return piece;
+    }
+    return Piece([_randomValue()]); // a single hex fits any empty cell
   }
 
   Future<void> _removeTiles(List<HexCoord> positions) async {
@@ -478,6 +505,9 @@ class GameProvider extends ChangeNotifier {
 
   // ------------------------------------------------------------ persistence
   void _save() {
+    _prefs.setInt(levelKey, _level);
+    _prefs.setInt(xpKey, _xp);
+    _prefs.setInt(goalKey, _goal);
     if (_gameOver) {
       _prefs.remove(_saveKey);
       return;
@@ -494,6 +524,9 @@ class GameProvider extends ChangeNotifier {
         t.phase = TilePhase.idle;
       }
       if (_tray.every((p) => p == null)) _dealTray();
+      _prefs.setInt(levelKey, _level);
+      _prefs.setInt(xpKey, _xp);
+      _prefs.setInt(goalKey, _goal);
       _tilesChanged();
       _gameOver = !_anyPieceFits();
       return true;

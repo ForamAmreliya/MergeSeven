@@ -5,35 +5,42 @@ import 'package:shared_preferences/shared_preferences.dart';
 class PlayerProvider extends ChangeNotifier {
   final SharedPreferences _prefs;
 
+  /// Diamonds a brand-new player starts with.
+  static const startingDiamonds = 0;
+
+  // Diamonds are stored under the old 'coins' key so existing balances carry
+  // over.
+  static const _diamondsKey = 'coins';
+
   PlayerProvider(this._prefs) {
-    _coins = _prefs.getInt('coins') ?? 200;
+    _diamonds = _prefs.getInt(_diamondsKey) ?? startingDiamonds;
     _bestScore = _prefs.getInt('bestScore') ?? 0;
     _bestTile = _prefs.getInt('bestTile') ?? 0;
     _gamesPlayed = _prefs.getInt('gamesPlayed') ?? 0;
     _bestLevel = _prefs.getInt('bestLevel') ?? 1;
   }
 
-  late int _coins;
+  late int _diamonds;
   late int _bestScore;
   late int _bestTile;
   late int _gamesPlayed;
   late int _bestLevel;
 
-  int get coins => _coins;
+  int get diamonds => _diamonds;
   int get bestScore => _bestScore;
   int get bestTile => _bestTile;
   int get gamesPlayed => _gamesPlayed;
   int get bestLevel => _bestLevel;
 
-  void addCoins(int amount) {
-    _coins += amount;
-    _prefs.setInt('coins', _coins);
+  void addDiamonds(int amount) {
+    _diamonds += amount;
+    _prefs.setInt(_diamondsKey, _diamonds);
     notifyListeners();
   }
 
   bool trySpend(int amount) {
-    if (_coins < amount) return false;
-    addCoins(-amount);
+    if (_diamonds < amount) return false;
+    addDiamonds(-amount);
     return true;
   }
 
@@ -64,10 +71,19 @@ class PlayerProvider extends ChangeNotifier {
   }
 
   void resetAll() {
-    for (final k in ['coins', 'bestScore', 'bestTile', 'gamesPlayed', 'bestLevel']) {
+    for (final k in [
+      _diamondsKey,
+      'bestScore',
+      'bestTile',
+      'gamesPlayed',
+      'bestLevel',
+      'currentLevel',
+      'currentGoal',
+      'currentXp',
+    ]) {
       _prefs.remove(k);
     }
-    _coins = 200;
+    _diamonds = startingDiamonds;
     _bestScore = _bestTile = _gamesPlayed = 0;
     _bestLevel = 1;
     notifyListeners();

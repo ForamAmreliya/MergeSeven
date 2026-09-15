@@ -17,8 +17,9 @@ class BoardGeometry {
   factory BoardGeometry.fit(Size size) {
     const r = GameProvider.boardRadius;
     final plateRadius = r * math.sqrt(3) + 1.15; // in cell units
-    final byWidth = size.width / (plateRadius * 2);
-    final byHeight = size.height / (plateRadius * math.sqrt(3));
+    // Extra cell units for the plate's outline, halo and 3D bottom edge.
+    final byWidth = size.width / (plateRadius * 2 + 0.5);
+    final byHeight = size.height / (plateRadius * math.sqrt(3) + 0.8);
     return BoardGeometry(size, math.min(byWidth, byHeight));
   }
 

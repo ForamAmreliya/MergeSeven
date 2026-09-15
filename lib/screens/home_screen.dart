@@ -90,7 +90,7 @@ class _Header extends StatelessWidget {
     final dark = Theme.of(context).brightness == Brightness.dark;
     return Row(
       children: [
-        CoinCard(scale: scale),
+        DiamondCard(scale: scale),
         const Spacer(),
         RoundIconButton(
           icon: dark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,

@@ -8,6 +8,7 @@ import '../core/utils/responsive.dart';
 import '../models/tile.dart';
 import '../providers/game_provider.dart';
 import '../providers/settings_provider.dart';
+import '../widgets/ads/banner_ad_view.dart';
 import '../widgets/board/board_view.dart';
 import '../widgets/board/drag_controller.dart';
 import '../widgets/common/bouncy_button.dart';
@@ -56,30 +57,24 @@ class _GameScreenState extends State<GameScreen> {
   void _onEvent(GameEvent e) {
     if (!mounted) return;
     switch (e) {
-      case GoalReachedEvent(:final goal, :final coins):
+      case GoalReachedEvent(:final goal, :final diamonds):
         _confetti.currentState?.burst(count: 140);
         _banner.currentState?.show(
           'GOAL $goal!',
-          subtitle: '+$coins coins',
+          subtitle: '+$diamonds diamonds',
           icon: Icons.emoji_events_rounded,
           colors: const [Color(0xFFFFC94D), Color(0xFFFF7A00)],
         );
-      case LevelUpEvent(:final level, :final coins):
+      case LevelUpEvent(:final level, :final diamonds):
         _confetti.currentState?.burst(count: 80);
         _banner.currentState?.show(
           'LEVEL $level',
-          subtitle: '+$coins coins',
+          subtitle: '+$diamonds diamonds',
           icon: Icons.keyboard_double_arrow_up_rounded,
           colors: const [Color(0xFF9B7BFF), Color(0xFF14C3F0)],
         );
       case PraiseEvent(:final text, :final tier):
         _praise.currentState?.show(text, tier);
-      case NotEnoughCoinsEvent():
-        _banner.currentState?.show(
-          'Not enough coins',
-          subtitle: 'Merge tiles & reach goals to earn more',
-          colors: const [Color(0xFFFF8FA3), Color(0xFFD7263D)],
-        );
       case GameOverEvent():
         Future.delayed(const Duration(milliseconds: 700), () {
           if (mounted) _showGameOver();
@@ -98,7 +93,7 @@ class _GameScreenState extends State<GameScreen> {
     if (!mounted) return;
     switch (action) {
       case PauseAction.restart:
-        context.read<GameProvider>().newGame();
+        context.read<GameProvider>().restartLevel();
       case PauseAction.home:
         Navigator.of(context).pop();
       default:
@@ -116,9 +111,18 @@ class _GameScreenState extends State<GameScreen> {
     if (!mounted) return;
     switch (action) {
       case GameOverAction.revive:
-        game.revive();
+        final paid = await payWithDiamondsOrAd(
+          context,
+          name: 'Continue',
+          description: 'Clear the 7 smallest tiles and keep playing.',
+          icon: Icons.favorite_rounded,
+          colors: const [Color(0xFFFF9CE6), Color(0xFFD62FB4)],
+          cost: GameProvider.costContinue,
+        );
+        if (!mounted) return;
+        paid ? game.revive() : _showGameOver();
       case GameOverAction.restart:
-        game.newGame();
+        game.restartLevel();
       case GameOverAction.home:
       case null:
         Navigator.of(context).pop();
@@ -136,6 +140,9 @@ class _GameScreenState extends State<GameScreen> {
       child: Scaffold(
         // Plain, theme-coloured background so the board stands out.
         backgroundColor: context.palette.gameBg,
+        // Full-width banner pinned to the bottom, right above the system
+        // navigation bar. Takes no space until an ad has loaded.
+        bottomNavigationBar: const BannerAdView(),
         body: Stack(
           children: [
             SafeArea(child: res.isLandscape ? _landscape(res) : _portrait(res)),
@@ -183,7 +190,7 @@ class _GameScreenState extends State<GameScreen> {
         Expanded(
           child: Align(
             alignment: Alignment.centerRight,
-            child: CoinCard(scale: s),
+            child: DiamondCard(scale: s),
           ),
         ),
       ],
@@ -248,7 +255,7 @@ class _GameScreenState extends State<GameScreen> {
                   BoosterBar(scale: s),
                   SizedBox(height: 8 * s),
                   _tray(s, c.maxWidth),
-                  SizedBox(height: 8 * s),
+                  SizedBox(height: 10 * s),
                 ],
               ),
             );

@@ -102,7 +102,7 @@ class _HowToPlayScreenState extends State<HowToPlayScreen> {
                           _Page(
                             title: 'Goals & Boosters',
                             body:
-                                'Reach the goal tile and level up to earn coins. Spend them on boosters when you get stuck.',
+                                'Reach the goal tile and level up to earn diamonds. Spend them on boosters when you get stuck.',
                             illustration: _BoosterDemo(scale: s),
                           ),
                         ],
@@ -433,7 +433,7 @@ class _BoosterDemo extends _Demo {
             SizedBox(width: 14 * scale),
             Icon(Icons.arrow_forward_rounded, color: p.textMuted),
             SizedBox(width: 14 * scale),
-            CoinIcon(size: 40 * scale),
+            DiamondIcon(size: 40 * scale),
           ],
         ),
         SizedBox(height: 18 * scale),

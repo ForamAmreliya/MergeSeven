@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'core/ads/ads_service.dart';
 import 'core/services/audio_service.dart';
 import 'core/theme/app_theme.dart';
 import 'providers/game_provider.dart';
@@ -21,20 +22,25 @@ Future<void> main() async {
   final audio = AudioService();
   audio.init(); // preloads in the background; sounds become available as they load
 
-  runApp(MergeSevenApp(prefs: prefs, audio: audio));
+  final ads = AdsService();
+  runApp(MergeSevenApp(prefs: prefs, audio: audio, ads: ads));
+  // Consent + ad SDK start once the first frame is on screen.
+  WidgetsBinding.instance.addPostFrameCallback((_) => ads.init());
 }
 
 class MergeSevenApp extends StatelessWidget {
   final SharedPreferences prefs;
   final AudioService audio;
+  final AdsService? ads;
 
-  const MergeSevenApp({super.key, required this.prefs, required this.audio});
+  const MergeSevenApp({super.key, required this.prefs, required this.audio, this.ads});
 
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
         Provider<AudioService>.value(value: audio),
+        Provider<AdsService>(create: (_) => ads ?? AdsService()),
         ChangeNotifierProvider(create: (_) => SettingsProvider(prefs, audio)),
         ChangeNotifierProvider(create: (_) => PlayerProvider(prefs)),
         ChangeNotifierProvider(create: (context) => GameProvider(prefs, context.read<PlayerProvider>(), audio)),
