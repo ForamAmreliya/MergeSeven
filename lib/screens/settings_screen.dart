@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../core/ads/ads_service.dart';
 import '../core/theme/app_colors.dart';
 import '../core/utils/responsive.dart';
 import '../core/utils/routes.dart';
 import '../providers/player_provider.dart';
 import '../providers/settings_provider.dart';
+import '../widgets/ads/native_ad_view.dart';
 import '../widgets/common/bouncy_button.dart';
 import '../widgets/common/game_background.dart';
 import '../widgets/game/game_dialogs.dart';
 import 'how_to_play_screen.dart';
+import 'privacy_policy_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -73,6 +76,24 @@ class SettingsScreen extends StatelessWidget {
                         onTap: () => Navigator.of(context).push(fadeRoute(const HowToPlayScreen())),
                       ),
                       _ActionRow(
+                        icon: Icons.privacy_tip_rounded,
+                        color: const Color(0xFF12A67A),
+                        label: 'Privacy Policy',
+                        onTap: () => Navigator.of(context).push(fadeRoute(const PrivacyPolicyScreen())),
+                      ),
+                      // Required by Google in regions with consent laws (EEA, UK).
+                      ValueListenableBuilder<bool>(
+                        valueListenable: context.read<AdsService>().privacyOptionsRequired,
+                        builder: (context, required, _) => required
+                            ? _ActionRow(
+                                icon: Icons.tune_rounded,
+                                color: const Color(0xFF2C7BF2),
+                                label: 'Privacy choices (ads)',
+                                onTap: () => context.read<AdsService>().showPrivacyOptions(),
+                              )
+                            : const SizedBox.shrink(),
+                      ),
+                      _ActionRow(
                         icon: Icons.delete_forever_rounded,
                         color: const Color(0xFFF0306A),
                         label: 'Reset progress',
@@ -87,6 +108,8 @@ class SettingsScreen extends StatelessWidget {
                       style: TextStyle(color: context.palette.textMuted, fontWeight: FontWeight.w500),
                     ),
                   ),
+                  // Native ad; takes no space until it has loaded.
+                  const NativeAdView(),
                 ],
               ),
             ),
@@ -107,7 +130,7 @@ class SettingsScreen extends StatelessWidget {
           builder: (context) => Column(
             children: [
               Text(
-                'Best score, coins and stats will be cleared. This cannot be undone.',
+                'Best score, diamonds and stats will be cleared. This cannot be undone.',
                 textAlign: TextAlign.center,
                 style: TextStyle(color: context.palette.textMuted, fontSize: 16),
               ),

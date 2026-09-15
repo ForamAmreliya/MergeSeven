@@ -36,12 +36,16 @@ class DialogCard extends StatelessWidget {
   final IconData? icon;
   final List<Color> headerColors;
 
+  /// Shows a close (x) button in the top-right corner of the card.
+  final bool showClose;
+
   const DialogCard({
     super.key,
     required this.title,
     required this.child,
     this.icon,
     this.headerColors = const [Color(0xFF9B7BFF), Color(0xFF14C3F0)],
+    this.showClose = true,
   });
 
   @override
@@ -92,9 +96,44 @@ class DialogCard extends StatelessWidget {
                   ),
                   child: Icon(icon ?? Icons.star_rounded, color: Colors.white, size: 32),
                 ),
+                if (showClose)
+                  Positioned(top: 44, right: 14, child: _CloseButton(onTap: () => Navigator.of(context).maybePop())),
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Round close button used in the corner of every popup card.
+class _CloseButton extends StatelessWidget {
+  final VoidCallback onTap;
+  const _CloseButton({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.palette;
+    return Semantics(
+      button: true,
+      label: 'Close',
+      child: BouncyButton(
+        onTap: onTap,
+        child: Container(
+          width: 38,
+          height: 38,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [p.card, p.barTrack],
+            ),
+            border: Border.all(color: p.cardBorder, width: 1.5),
+            boxShadow: [BoxShadow(color: p.cardBorder, offset: const Offset(0, 3))],
+          ),
+          child: Icon(Icons.close_rounded, size: 22, color: p.textMuted),
         ),
       ),
     );
@@ -115,8 +154,10 @@ class PauseDialog extends StatelessWidget {
       child: Column(
         children: [
           Consumer<SettingsProvider>(
-            builder: (context, settings, _) => Row(
-              mainAxisAlignment: MainAxisAlignment.center,
+            builder: (context, settings, _) => Wrap(
+              alignment: WrapAlignment.center,
+              spacing: 12,
+              runSpacing: 10,
               children: [
                 _ToggleChip(
                   icon: settings.sound ? Icons.volume_up_rounded : Icons.volume_off_rounded,
@@ -124,7 +165,6 @@ class PauseDialog extends StatelessWidget {
                   on: settings.sound,
                   onTap: () => settings.sound = !settings.sound,
                 ),
-                const SizedBox(width: 12),
                 _ToggleChip(
                   icon: Icons.vibration_rounded,
                   label: 'Haptics',
@@ -214,10 +254,11 @@ class GameOverDialog extends StatelessWidget {
     final game = context.read<GameProvider>();
     final player = context.read<PlayerProvider>();
     final isBest = game.score > 0 && game.score >= player.bestScore;
-    final canRevive = player.coins >= GameProvider.costRevive;
     return DialogCard(
       title: 'Out of Space!',
       icon: Icons.grid_off_rounded,
+      // No close button: closing without a choice would leave the game over.
+      showClose: false,
       headerColors: const [Color(0xFFFF8FA3), Color(0xFFF0306A)],
       child: Column(
         children: [
@@ -282,11 +323,11 @@ class GameOverDialog extends StatelessWidget {
               Expanded(
                 child: GradientButton(
                   label: 'CONTINUE',
-                  icon: Icons.favorite_rounded,
+                  icon: Icons.play_circle_fill_rounded,
                   height: 50,
                   fontSize: 16,
                   colors: const [Color(0xFFFF9CE6), Color(0xFFD62FB4)],
-                  onTap: canRevive ? () => Navigator.pop(context, GameOverAction.revive) : null,
+                  onTap: () => Navigator.pop(context, GameOverAction.revive),
                 ),
               ),
               const SizedBox(width: 10),
@@ -307,11 +348,11 @@ class GameOverDialog extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const CoinIcon(size: 15),
+                const DiamondIcon(size: 16),
                 const SizedBox(width: 4),
                 Flexible(
                   child: Text(
-                    'Continue: ${GameProvider.costRevive} coins, clears 7 tiles',
+                    'Continue: ${GameProvider.costContinue} diamonds or a short video, clears 7 tiles',
                     textAlign: TextAlign.center,
                     style: TextStyle(fontSize: 12.5, color: p.textMuted, fontWeight: FontWeight.w500),
                   ),

@@ -37,6 +37,7 @@ dependencies:
   provider:
   shared_preferences:
   audioplayers:
+  google_mobile_ads: ^9.1.0
 
 dev_dependencies:
   flutter_test:

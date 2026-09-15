@@ -43,14 +43,14 @@ class MergeEvent extends GameEvent {
 
 class GoalReachedEvent extends GameEvent {
   final int goal;
-  final int coins;
-  const GoalReachedEvent(this.goal, this.coins);
+  final int diamonds;
+  const GoalReachedEvent(this.goal, this.diamonds);
 }
 
 class LevelUpEvent extends GameEvent {
   final int level;
-  final int coins;
-  const LevelUpEvent(this.level, this.coins);
+  final int diamonds;
+  const LevelUpEvent(this.level, this.diamonds);
 }
 
 /// Cheer text after a good move; higher [tier] means a better move.
@@ -66,8 +66,4 @@ class InvalidMoveEvent extends GameEvent {
 
 class GameOverEvent extends GameEvent {
   const GameOverEvent();
-}
-
-class NotEnoughCoinsEvent extends GameEvent {
-  const NotEnoughCoinsEvent();
 }

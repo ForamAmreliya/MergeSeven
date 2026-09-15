@@ -190,9 +190,10 @@ class ScoreCard extends StatelessWidget {
   }
 }
 
-class CoinCard extends StatelessWidget {
+/// Diamond balance.
+class DiamondCard extends StatelessWidget {
   final double scale;
-  const CoinCard({super.key, required this.scale});
+  const DiamondCard({super.key, required this.scale});
 
   @override
   Widget build(BuildContext context) {
@@ -202,15 +203,15 @@ class CoinCard extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          CoinIcon(size: 24 * scale),
+          DiamondIcon(size: 24 * scale),
           SizedBox(width: 6 * scale),
           Flexible(
             child: FittedBox(
               fit: BoxFit.scaleDown,
               child: Selector<PlayerProvider, int>(
-                selector: (_, pl) => pl.coins,
-                builder: (_, coins, _) => AnimatedCount(
-                  value: coins,
+                selector: (_, pl) => pl.diamonds,
+                builder: (_, diamonds, _) => AnimatedCount(
+                  value: diamonds,
                   style: TextStyle(fontSize: 20 * scale, fontWeight: FontWeight.w700, color: p.textPrimary),
                 ),
               ),
@@ -222,27 +223,72 @@ class CoinCard extends StatelessWidget {
   }
 }
 
-class CoinIcon extends StatelessWidget {
+/// Faceted blue diamond gem.
+class DiamondIcon extends StatelessWidget {
   final double size;
-  const CoinIcon({super.key, required this.size});
+  const DiamondIcon({super.key, required this.size});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        gradient: const LinearGradient(
-          colors: [Color(0xFFFFE17A), Color(0xFFFFA800)],
+    return CustomPaint(size: Size.square(size), painter: const _DiamondPainter());
+  }
+}
+
+class _DiamondPainter extends CustomPainter {
+  const _DiamondPainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final w = size.width;
+    final h = size.height;
+    // Outline points: flat top (crown) and a point at the bottom.
+    final tl = Offset(w * 0.26, h * 0.14);
+    final tr = Offset(w * 0.74, h * 0.14);
+    final ml = Offset(w * 0.04, h * 0.38);
+    final mr = Offset(w * 0.96, h * 0.38);
+    final bottom = Offset(w * 0.5, h * 0.92);
+    final gem = Path()
+      ..moveTo(tl.dx, tl.dy)
+      ..lineTo(tr.dx, tr.dy)
+      ..lineTo(mr.dx, mr.dy)
+      ..lineTo(bottom.dx, bottom.dy)
+      ..lineTo(ml.dx, ml.dy)
+      ..close();
+    canvas.drawPath(
+      gem,
+      Paint()
+        ..shader = const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-        ),
-        border: Border.all(color: const Color(0xFFFFF3C4), width: size * 0.08),
-      ),
-      child: Icon(Icons.star_rounded, size: size * 0.66, color: Colors.white),
+          colors: [Color(0xFFB8F4FF), Color(0xFF3DB8FF), Color(0xFF2F6BFF)],
+        ).createShader(Offset.zero & size),
+    );
+    // Crown facet (lighter) and a side facet (darker) for a cut-gem look.
+    final crown = Path()
+      ..moveTo(tl.dx, tl.dy)
+      ..lineTo(tr.dx, tr.dy)
+      ..lineTo(mr.dx, mr.dy)
+      ..lineTo(ml.dx, ml.dy)
+      ..close();
+    canvas.drawPath(crown, Paint()..color = Colors.white.withValues(alpha: 0.35));
+    final facet = Path()
+      ..moveTo(w * 0.5, h * 0.38)
+      ..lineTo(mr.dx, mr.dy)
+      ..lineTo(bottom.dx, bottom.dy)
+      ..close();
+    canvas.drawPath(facet, Paint()..color = const Color(0xFF1D3FBF).withValues(alpha: 0.28));
+    canvas.drawPath(
+      gem,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = w * 0.06
+        ..strokeJoin = StrokeJoin.round
+        ..color = Colors.white.withValues(alpha: 0.85),
     );
   }
+
+  @override
+  bool shouldRepaint(_DiamondPainter oldDelegate) => false;
 }
 
 /// The goal tile to reach. Static glow (no per-frame work); it pops when a

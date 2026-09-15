@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:merge_seven/main.dart';
 import 'package:merge_seven/screens/game_screen.dart';
+import 'package:merge_seven/screens/settings_screen.dart';
 import 'package:merge_seven/widgets/board/board_view.dart';
 import 'package:provider/provider.dart';
 import 'package:merge_seven/core/services/audio_service.dart';
@@ -185,6 +186,100 @@ void main() {
     expect(downward.gameOver, isTrue);
   });
 
+  test('new players start with 0 diamonds and can spend what they earn', () async {
+    final game = await _game(
+      state([], [
+        [2],
+        [4],
+        [8],
+      ]),
+    );
+    final prefs = await SharedPreferences.getInstance();
+    final player = PlayerProvider(prefs);
+    expect(PlayerProvider.startingDiamonds, 0);
+    expect(player.diamonds, 0);
+    expect(player.trySpend(GameProvider.costUndo), isFalse);
+    player.addDiamonds(30);
+    expect(player.trySpend(GameProvider.costUndo), isTrue); // 30 -> 20
+    expect(player.trySpend(GameProvider.costSmash), isTrue); // 20 -> 0
+    expect(player.diamonds, 0);
+    expect(player.trySpend(GameProvider.costShuffle), isFalse);
+
+    await game.place(0, const HexCoord(-3, 0));
+    game.undo(); // payment (diamonds or ad) happens in the UI first
+    expect(game.tiles, isEmpty);
+    expect(game.tray[0]!.values, [2]);
+
+    await game.place(0, const HexCoord(-3, 0));
+    game.toggleHammer();
+    expect(game.hammerMode, isTrue);
+    await game.smash(const HexCoord(-3, 0));
+    expect(game.tiles, isEmpty);
+  });
+
+  test('continue always leaves a piece that fits', () async {
+    // Board completely full and only double pieces left: game over.
+    final game = await _game({
+      ...state(fullBoardExcept({}), [
+        [2, 4],
+        [8, 16],
+        [32, 64],
+      ]),
+      'level': 11,
+    });
+    expect(game.gameOver, isTrue);
+    await game.revive();
+    expect(game.gameOver, isFalse);
+    expect(game.tiles.length, GameProvider.cells.length - 7);
+    // All 3 new pieces have room.
+    expect([for (var i = 0; i < 3; i++) game.slotFits(i)], [true, true, true]);
+  });
+
+  test('restart keeps the level and level bar, only the board and score clear', () async {
+    final game = await _game({
+      ...state(
+        [
+          [0, 0, 64],
+          [1, 0, 32],
+        ],
+        [
+          [2],
+        ],
+      ),
+      'level': 11,
+      'score': 5000,
+      'xp': 40,
+      'goal': 256,
+      'peak': 128,
+    });
+    game.restartLevel();
+    expect(game.level, 11);
+    expect(game.xp, 40);
+    expect(game.goal, 256);
+    expect(game.tiles, isEmpty);
+    expect(game.score, 0);
+    expect(game.tray.every((p) => p != null), isTrue);
+  });
+
+  test('new game after a game over keeps the level, even after reopening the app', () async {
+    final game = await _game({
+      ...state(fullBoardExcept({}), [
+        [2, 4],
+      ]),
+      'level': 6,
+      'goal': 256,
+    });
+    expect(game.gameOver, isTrue); // saved game is deleted on game over
+
+    // Simulate reopening the app: a fresh provider with the same storage.
+    final prefs = await SharedPreferences.getInstance();
+    final reopened = GameProvider(prefs, PlayerProvider(prefs), _SilentAudio());
+    reopened.newGame();
+    expect(reopened.level, 6);
+    expect(reopened.goal, 256);
+    expect(reopened.tiles, isEmpty);
+  });
+
   testWidgets('dragging the piece onto the board places it', (tester) async {
     SharedPreferences.setMockInitialValues({'tutorialSeen': true});
     final prefs = await SharedPreferences.getInstance();
@@ -216,6 +311,31 @@ void main() {
     }
     expect(game.tiles, isNotEmpty);
     expect(game.busy, isFalse);
+
+    await tester.pumpWidget(const SizedBox());
+    await tester.pump(const Duration(seconds: 3));
+  });
+
+  testWidgets('settings opens the privacy policy page', (tester) async {
+    SharedPreferences.setMockInitialValues({'tutorialSeen': true});
+    final prefs = await SharedPreferences.getInstance();
+    tester.view.physicalSize = const Size(390, 844) * 3;
+    tester.view.devicePixelRatio = 3;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(MergeSevenApp(prefs: prefs, audio: _SilentAudio()));
+    await tester.pump(const Duration(milliseconds: 100));
+    tester
+        .state<NavigatorState>(find.byType(Navigator).first)
+        .pushReplacement(MaterialPageRoute(builder: (_) => const SettingsScreen()));
+    for (var i = 0; i < 10; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+
+    await tester.tap(find.text('Privacy Policy'));
+    for (var i = 0; i < 10; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    expect(find.text('Overview'), findsOneWidget);
 
     await tester.pumpWidget(const SizedBox());
     await tester.pump(const Duration(seconds: 3));
