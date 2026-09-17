@@ -33,7 +33,7 @@ class _BouncyButtonState extends State<BouncyButton> {
       onTap: enabled
           ? () {
               final audio = context.read<AudioService>();
-              if (widget.sound) audio.play(Sfx.click, volume: 0.7);
+              if (widget.sound) audio.play(Sfx.click);
               audio.haptic();
               widget.onTap!();
             }

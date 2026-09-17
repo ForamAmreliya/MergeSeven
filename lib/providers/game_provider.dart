@@ -145,7 +145,7 @@ class GameProvider extends ChangeNotifier {
 
   // ---------------------------------------------------------------- actions
   void rejectDrop() {
-    _audio.play(Sfx.error, volume: 0.5);
+    _audio.play(Sfx.error);
     _events.add(const InvalidMoveEvent());
   }
 
@@ -169,7 +169,7 @@ class GameProvider extends ChangeNotifier {
     _audio.haptic();
     notifyListeners();
 
-    await _delay(120);
+    await _delay(90);
     _combo = 0;
     _biggestGroup = 0;
     for (final cell in placed) {
@@ -204,7 +204,7 @@ class GameProvider extends ChangeNotifier {
       _audio.haptic(_combo > 2 ? HapticStrength.medium : HapticStrength.light);
       notifyListeners();
 
-      await _delay(170);
+      await _delay(140);
       for (final t in absorbed) {
         _tiles.remove(t.id);
       }
@@ -221,7 +221,7 @@ class GameProvider extends ChangeNotifier {
       _checkLevel();
       _tilesChanged();
       notifyListeners();
-      await _delay(150);
+      await _delay(110);
     }
   }
 
@@ -364,7 +364,7 @@ class GameProvider extends ChangeNotifier {
     if (_hammerMode) {
       _hammerMode = false;
     } else if (_board.isEmpty) {
-      _audio.play(Sfx.error, volume: 0.5);
+      _audio.play(Sfx.error);
       return;
     } else {
       _hammerMode = true;

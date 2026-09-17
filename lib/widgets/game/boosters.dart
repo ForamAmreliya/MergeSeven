@@ -134,7 +134,7 @@ Future<bool> payWithDiamondsOrAd(
   switch (choice) {
     case _Pay.diamonds:
       if (!context.read<PlayerProvider>().trySpend(cost)) return false;
-      context.read<AudioService>().play(Sfx.coin, volume: 0.7);
+      context.read<AudioService>().play(Sfx.coin);
       return true;
     case _Pay.ad:
       return context.read<AdsService>().rewardGate(context);

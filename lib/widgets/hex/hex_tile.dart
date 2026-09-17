@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_theme.dart';
@@ -40,6 +41,26 @@ class TileImageCache {
 
   /// Image height relative to the radius; leaves room for the drop shadow.
   static const heightFactor = 2.2;
+
+  static final Set<int> _precached = {};
+
+  /// Builds the tile images for one size ahead of time, a couple per frame so
+  /// the game never stutters when a new number first appears.
+  static void precache(double radius, double dpr, {int upTo = 8192}) {
+    final key = math.max(4, (radius * dpr).round());
+    if (!_precached.add(key)) return;
+    var value = 2;
+    void step() {
+      for (var i = 0; i < 3 && value <= upTo; i++, value <<= 1) {
+        get(value, radius, dpr);
+      }
+      if (value <= upTo) {
+        SchedulerBinding.instance.addPostFrameCallback((_) => step());
+      }
+    }
+
+    SchedulerBinding.instance.addPostFrameCallback((_) => step());
+  }
 
   static ui.Image get(int value, double radius, double dpr) {
     final rPx = math.max(4, (radius * dpr).round()).toDouble();

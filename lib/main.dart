@@ -28,12 +28,38 @@ Future<void> main() async {
   WidgetsBinding.instance.addPostFrameCallback((_) => ads.init());
 }
 
-class MergeSevenApp extends StatelessWidget {
+class MergeSevenApp extends StatefulWidget {
   final SharedPreferences prefs;
   final AudioService audio;
   final AdsService? ads;
 
   const MergeSevenApp({super.key, required this.prefs, required this.audio, this.ads});
+
+  @override
+  State<MergeSevenApp> createState() => _MergeSevenAppState();
+}
+
+class _MergeSevenAppState extends State<MergeSevenApp> with WidgetsBindingObserver {
+  SharedPreferences get prefs => widget.prefs;
+  AudioService get audio => widget.audio;
+  AdsService? get ads => widget.ads;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state != AppLifecycleState.resumed) audio.stopAll();
+  }
 
   @override
   Widget build(BuildContext context) {
