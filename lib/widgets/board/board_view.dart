@@ -26,6 +26,7 @@ class BoardView extends StatelessWidget {
       builder: (context, constraints) {
         final geo = BoardGeometry.fit(constraints.biggest);
         drag.geometry = geo;
+        TileImageCache.precache(geo.tileRadius, MediaQuery.devicePixelRatioOf(context));
         return GestureDetector(
           behavior: HitTestBehavior.opaque,
           onTapUp: (d) {

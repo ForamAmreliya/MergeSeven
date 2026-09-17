@@ -22,7 +22,7 @@ class TileWidget extends StatelessWidget {
     final leaving = tile.phase == TilePhase.mergeOut;
     final smashed = tile.phase == TilePhase.smash;
     return AnimatedPositioned(
-      duration: Duration(milliseconds: leaving ? 170 : 220),
+      duration: Duration(milliseconds: leaving ? 140 : 190),
       curve: leaving ? Curves.easeInCubic : Curves.easeOut,
       left: c.dx - w / 2,
       top: c.dy - r,

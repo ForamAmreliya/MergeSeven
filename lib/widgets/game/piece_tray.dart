@@ -6,6 +6,7 @@ import '../../core/theme/app_colors.dart';
 import '../../models/piece.dart';
 import '../../providers/game_provider.dart';
 import '../board/drag_controller.dart';
+import '../hex/hex_tile.dart';
 import '../hex/piece_view.dart';
 
 /// Three piece slots. Drag any piece onto the board.
@@ -21,6 +22,7 @@ class PieceSlots extends StatelessWidget {
       builder: (context, c) {
         final gap = 10 * scale;
         final side = ((c.maxWidth - gap * 2) / GameProvider.traySize).clamp(60.0, c.maxHeight);
+        TileImageCache.precache(side / 4.4, MediaQuery.devicePixelRatioOf(context));
         return Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -60,7 +62,7 @@ class _Slot extends StatelessWidget {
     if (target != null) {
       context.read<GameProvider>().place(index, target);
     } else {
-      context.read<AudioService>().play(Sfx.error, volume: 0.35);
+      context.read<AudioService>().play(Sfx.error);
     }
   }
 
