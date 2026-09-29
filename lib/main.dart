@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'core/ads/ads_service.dart';
 import 'core/services/audio_service.dart';
 import 'core/theme/app_theme.dart';
+import 'core/utils/app_info.dart';
 import 'providers/game_provider.dart';
 import 'providers/player_provider.dart';
 import 'providers/settings_provider.dart';
@@ -18,6 +19,7 @@ Future<void> main() async {
     const SystemUiOverlayStyle(statusBarColor: Colors.transparent, systemNavigationBarColor: Colors.transparent),
   );
 
+  await AppInfo.load();
   final prefs = await SharedPreferences.getInstance();
   final audio = AudioService();
   audio.init(); // preloads in the background; sounds become available as they load

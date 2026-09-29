@@ -161,17 +161,34 @@ void main() {
     }
   });
 
-  test('bigger numbers unlock as the game grows', () async {
-    // Best tile so far is 32, so pieces can carry 2, 4 and 8.
-    final seen = <int>{};
+  test('the numbers dealt follow the board', () async {
+    // Best tile 32: pieces run up to 16.
+    final early = <int>{};
     for (var i = 0; i < 60; i++) {
       final game = await _game({...state([], []), 'peak': 32});
       for (final p in game.tray) {
-        seen.addAll(p!.values);
+        early.addAll(p!.values);
       }
     }
-    expect(seen, containsAll([2, 4, 8]));
-    expect(seen.every((v) => v <= 16), isTrue);
+    expect(early, containsAll([2, 4, 8, 16]));
+    expect(early.every((v) => v <= 16), isTrue);
+
+    // Best tile 128 on a board of big tiles: no more 2s or 4s.
+    final late = <int>{};
+    for (var i = 0; i < 60; i++) {
+      final game = await _game({
+        ...state([
+          [0, 0, 64],
+          [1, 0, 128],
+        ], []),
+        'peak': 128,
+      });
+      for (final p in game.tray) {
+        late.addAll(p!.values);
+      }
+    }
+    expect(late.every((v) => v >= 8), isTrue, reason: 'dealt $late');
+    expect(late.any((v) => v >= 32), isTrue);
   });
 
   test('pieces cannot be rotated, so a pair only fits in its own direction', () async {

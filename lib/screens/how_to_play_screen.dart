@@ -7,6 +7,7 @@ import '../core/theme/app_colors.dart';
 import '../core/utils/responsive.dart';
 import '../core/utils/routes.dart';
 import '../providers/settings_provider.dart';
+import '../widgets/ads/native_ad_view.dart';
 import '../widgets/common/bouncy_button.dart';
 import '../widgets/common/game_background.dart';
 import '../widgets/game/hud.dart';
@@ -133,6 +134,8 @@ class _HowToPlayScreenState extends State<HowToPlayScreen> {
                       colors: [const Color(0xFFB79CFF), p.accent],
                       onTap: _next,
                     ),
+                    // Native ad; takes no space until it has loaded.
+                    const NativeAdView(compact: true),
                     SizedBox(height: 8 * s),
                   ],
                 ),

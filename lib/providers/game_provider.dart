@@ -452,13 +452,16 @@ class GameProvider extends ChangeNotifier {
   }
 
   int _randomValue() {
-    // Highest number a new piece may carry. A new game deals only 2s; 4 is
-    // unlocked once an 8 is made (or at level 3), 8 after a 16 (or level 5),
-    // and so on up to 256.
+    // The numbers dealt follow the board: the range moves up as the best tile
+    // grows, so a board full of 64s and 128s stops dealing 2s.
+    // Highest: one step below the best tile made (a 128 deals up to 64), with
+    // a floor from the level so early games still grow.
     final maxExp = math.max(_log2(_peak) - 1, 1 + (_level - 1) ~/ 2).clamp(1, 8);
+    // Lowest: three steps under the highest (64 max -> 8, 16, 32, 64).
+    final minExp = math.max(1, maxExp - 3);
 
-    // Half of the time deal a number that is already on the board, so pieces
-    // are useful for building merges.
+    // Often deal a number that is already on the board, so leftover small
+    // tiles can still be merged away.
     if (_board.isNotEmpty && _rng.nextDouble() < 0.5) {
       final onBoard = [
         for (final t in _board.values)
@@ -467,14 +470,15 @@ class GameProvider extends ChangeNotifier {
       if (onBoard.isNotEmpty) return onBoard[_rng.nextInt(onBoard.length)];
     }
 
-    // Otherwise any number in range; smaller numbers are a bit more common.
-    final weights = [for (var e = 1; e <= maxExp; e++) math.pow(0.6, e - 1)];
+    // Otherwise a number from the current range; the smaller ones in that
+    // range are a bit more common.
+    final weights = [for (var e = minExp; e <= maxExp; e++) math.pow(0.7, e - minExp)];
     var roll = _rng.nextDouble() * weights.fold<double>(0, (a, b) => a + b);
     for (var i = 0; i < weights.length; i++) {
       roll -= weights[i];
-      if (roll <= 0) return 1 << (i + 1);
+      if (roll <= 0) return 1 << (minExp + i);
     }
-    return 2;
+    return 1 << minExp;
   }
 
   // ---------------------------------------------------------------- helpers
