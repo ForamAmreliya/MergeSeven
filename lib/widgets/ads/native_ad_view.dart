@@ -11,7 +11,10 @@ import '../../core/theme/app_colors.dart';
 /// Native ad drawn with Google's medium template, styled to the app theme.
 /// Takes no space until the ad has loaded.
 class NativeAdView extends StatefulWidget {
-  const NativeAdView({super.key});
+  /// Small template (about 100px tall) for screens with little room.
+  final bool compact;
+
+  const NativeAdView({super.key, this.compact = false});
 
   @override
   State<NativeAdView> createState() => _NativeAdViewState();
@@ -46,7 +49,7 @@ class _NativeAdViewState extends State<NativeAdView> {
       adUnitId: AdIds.native,
       request: const AdRequest(),
       nativeTemplateStyle: NativeTemplateStyle(
-        templateType: TemplateType.medium,
+        templateType: widget.compact ? TemplateType.small : TemplateType.medium,
         mainBackgroundColor: p.card,
         cornerRadius: 16,
         callToActionTextStyle: NativeTemplateTextStyle(
@@ -105,7 +108,7 @@ class _NativeAdViewState extends State<NativeAdView> {
       alignment: Alignment.topCenter,
       child: ad != null && _loaded
           ? Container(
-              margin: const EdgeInsets.only(top: 16),
+              margin: EdgeInsets.only(top: widget.compact ? 8 : 16),
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
                 color: p.card,
@@ -113,7 +116,9 @@ class _NativeAdViewState extends State<NativeAdView> {
                 border: Border.all(color: p.cardBorder, width: 1.5),
               ),
               child: ConstrainedBox(
-                constraints: const BoxConstraints(minHeight: 320, maxHeight: 400),
+                constraints: widget.compact
+                    ? const BoxConstraints(minHeight: 90, maxHeight: 130)
+                    : const BoxConstraints(minHeight: 320, maxHeight: 400),
                 child: AdWidget(ad: ad),
               ),
             )

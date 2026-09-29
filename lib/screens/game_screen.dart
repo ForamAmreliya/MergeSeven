@@ -58,7 +58,7 @@ class _GameScreenState extends State<GameScreen> {
     if (!mounted) return;
     switch (e) {
       case GoalReachedEvent(:final goal, :final diamonds):
-        _confetti.currentState?.burst(count: 140);
+        _confetti.currentState?.burst(count: 90);
         _banner.currentState?.show(
           'GOAL $goal!',
           subtitle: '+$diamonds diamonds',
@@ -66,7 +66,7 @@ class _GameScreenState extends State<GameScreen> {
           colors: const [Color(0xFFFFC94D), Color(0xFFFF7A00)],
         );
       case LevelUpEvent(:final level, :final diamonds):
-        _confetti.currentState?.burst(count: 80);
+        _confetti.currentState?.burst(count: 55);
         _banner.currentState?.show(
           'LEVEL $level',
           subtitle: '+$diamonds diamonds',

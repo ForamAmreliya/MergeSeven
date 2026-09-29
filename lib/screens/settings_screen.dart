@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../core/ads/ads_service.dart';
 import '../core/theme/app_colors.dart';
+import '../core/utils/app_info.dart';
 import '../core/utils/responsive.dart';
 import '../core/utils/routes.dart';
 import '../providers/player_provider.dart';
@@ -104,7 +105,7 @@ class SettingsScreen extends StatelessWidget {
                   SizedBox(height: 28 * s),
                   Center(
                     child: Text(
-                      'MergeSeven v1.0.0',
+                      'MergeSeven ${AppInfo.label}'.trim(),
                       style: TextStyle(color: context.palette.textMuted, fontWeight: FontWeight.w500),
                     ),
                   ),
