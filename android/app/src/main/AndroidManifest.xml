@@ -2,7 +2,6 @@
     <!-- Needed by Google AdMob to load ads. -->
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
-    <uses-permission android:name="com.google.android.gms.permission.AD_ID"/>
     <!-- 1. General Permissions -->
     <uses-permission android:name="com.google.android.gms.permission.AD_ID"/>
     <uses-permission android:name="android.permission.INTERNET"/>
@@ -11,9 +10,6 @@
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <!-- AdMob app ID -->
-        <meta-data
-            android:name="com.google.android.gms.ads.APPLICATION_ID"
-            android:value="ca-app-pub-7358280287589547~6825363377" />
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
             android:value="ca-app-pub-7358280287589547~6825363377" />
