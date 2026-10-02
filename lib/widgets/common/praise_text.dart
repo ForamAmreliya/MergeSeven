@@ -15,8 +15,9 @@ class PraiseText extends StatefulWidget {
 
 class PraiseTextState extends State<PraiseText> with SingleTickerProviderStateMixin {
   late final AnimationController _c = AnimationController(vsync: this, duration: const Duration(milliseconds: 1500));
-  String _text = '';
+  String _text = 'GOOD JOB!';
   int _tier = 0;
+  bool _warmedUp = false;
 
   static const _gradients = [
     [Color(0xFF7CF29A), Color(0xFF14C3F0)], // good job
@@ -47,7 +48,15 @@ class PraiseTextState extends State<PraiseText> with SingleTickerProviderStateMi
           animation: _c,
           builder: (context, child) {
             final t = _c.value;
-            if (t == 0 || t == 1) return const SizedBox.shrink();
+            if (t == 0 || t == 1) {
+              // One invisible frame warms up the gradient / outline shaders so
+              // the first real cheer does not stutter.
+              if (_warmedUp) return const SizedBox.shrink();
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted) setState(() => _warmedUp = true);
+              });
+              return Opacity(opacity: 0, child: child);
+            }
             final w = box.maxWidth;
             double dx;
             double skew;
