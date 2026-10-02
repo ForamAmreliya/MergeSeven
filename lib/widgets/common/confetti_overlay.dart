@@ -31,6 +31,15 @@ class ConfettiOverlayState extends State<ConfettiOverlay> with SingleTickerProvi
   Int32List _colors = Int32List(0);
 
   static const _fields = 6; // vx, vy, spin, sway, scale, fromLeft
+
+  /// Biggest burst the game uses; buffers are made this size up front.
+  static const _maxPieces = 90;
+
+  /// False until one invisible frame has been drawn, which builds the picture
+  /// and warms up the GPU for this kind of drawing. Without it the very first
+  /// burst stutters.
+  bool warmedUp = false;
+
   static ui.Image? _piece;
 
   static const _palette = [
@@ -56,14 +65,28 @@ class ConfettiOverlayState extends State<ConfettiOverlay> with SingleTickerProvi
     return _piece = image;
   }
 
+  @override
+  void initState() {
+    super.initState();
+    // Build everything now, not during the first burst.
+    _pieceImage();
+    _allocate(_maxPieces);
+  }
+
+  void _allocate(int count) {
+    _data = Float32List(count * _fields);
+    _baseColors = Int32List(count);
+    _transforms = Float32List(count * 4);
+    _rects = Float32List(count * 4);
+    _colors = Int32List(count);
+  }
+
+  /// How many pieces the current burst uses (the buffers may be bigger).
+  int _count = 0;
+
   void burst({int count = 70}) {
-    if (count * _fields != _data.length) {
-      _data = Float32List(count * _fields);
-      _baseColors = Int32List(count);
-      _transforms = Float32List(count * 4);
-      _rects = Float32List(count * 4);
-      _colors = Int32List(count);
-    }
+    count = math.min(count, _maxPieces);
+    _count = count;
     for (var i = 0; i < count; i++) {
       final angle = -math.pi / 2 + (_rng.nextDouble() - 0.5) * math.pi * 0.9;
       final speed = 0.55 + _rng.nextDouble() * 0.75;
@@ -111,9 +134,12 @@ class _ConfettiPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    if (!c.isAnimating) return;
+    if (!c.isAnimating) {
+      _warmUp(canvas);
+      return;
+    }
     final data = state._data;
-    final count = data.length ~/ ConfettiOverlayState._fields;
+    final count = state._count;
     if (count == 0) return;
 
     final t = c.value * 2.6; // seconds
@@ -157,6 +183,22 @@ class _ConfettiPainter extends CustomPainter {
       Float32List.sublistView(transforms, 0, visible * 4),
       Float32List.sublistView(state._rects, 0, visible * 4),
       Int32List.sublistView(colors, 0, visible),
+      BlendMode.modulate,
+      null,
+      _paint,
+    );
+  }
+
+  /// One invisible piece on the first frame, so the GPU has everything ready
+  /// before the first real burst.
+  void _warmUp(Canvas canvas) {
+    if (state.warmedUp) return;
+    state.warmedUp = true;
+    canvas.drawRawAtlas(
+      ConfettiOverlayState._pieceImage(),
+      Float32List.fromList([1, 0, -40, -40]),
+      Float32List.fromList([0, 0, 16, 24]),
+      Int32List.fromList([0x00FFFFFF]),
       BlendMode.modulate,
       null,
       _paint,

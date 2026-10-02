@@ -64,6 +64,11 @@ class _MergeSevenAppState extends State<MergeSevenApp> with WidgetsBindingObserv
   }
 
   @override
+  void didChangePlatformBrightness() {
+    ads?.setBrightness(WidgetsBinding.instance.platformDispatcher.platformBrightness);
+  }
+
+  @override
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
@@ -83,6 +88,10 @@ class _MergeSevenAppState extends State<MergeSevenApp> with WidgetsBindingObserv
           themeMode: mode,
           themeAnimationDuration: const Duration(milliseconds: 400),
           builder: (context, child) {
+            // Native ad templates follow the app theme; the service reloads
+            // them only when the brightness actually changes.
+            final brightness = Theme.of(context).brightness;
+            WidgetsBinding.instance.addPostFrameCallback((_) => ads?.setBrightness(brightness));
             // Keep the game layout stable when the system font is very large.
             final mq = MediaQuery.of(context);
             return MediaQuery(
