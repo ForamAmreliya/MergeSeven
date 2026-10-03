@@ -111,7 +111,8 @@ class _BoardPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final key = (size, p, hammer, dpr);
+    // Whole pixels only: a sub-pixel layout change must not rebuild the image.
+    final key = ((size.width * dpr).round(), (size.height * dpr).round(), p, hammer);
     if (_image == null || _imageKey != key) {
       final recorder = ui.PictureRecorder();
       final c = Canvas(recorder)..scale(dpr);

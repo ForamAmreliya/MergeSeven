@@ -6,7 +6,7 @@ import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../core/services/audio_service.dart';
+import '../core/services/haptics_service.dart';
 import '../models/hex_coord.dart';
 import '../models/piece.dart';
 import '../models/tile.dart';
@@ -22,13 +22,13 @@ import 'player_provider.dart';
 ///    video ad; continuing after game over needs a video ad.
 ///  * The game ends when none of the remaining pieces has room on the board.
 class GameProvider extends ChangeNotifier {
-  GameProvider(this._prefs, this._player, this._audio) {
+  GameProvider(this._prefs, this._player, this._haptics) {
     if (!_restore()) _reset();
   }
 
   final SharedPreferences _prefs;
   final PlayerProvider _player;
-  final AudioService _audio;
+  final HapticsService _haptics;
   final math.Random _rng = math.Random();
 
   static const int boardRadius = 3;
@@ -72,7 +72,6 @@ class GameProvider extends ChangeNotifier {
   int _goal = 32;
   int _peak = 2;
   int _combo = 0;
-  int _biggestGroup = 0;
 
   bool _busy = false;
   bool _gameOver = false;
@@ -145,7 +144,6 @@ class GameProvider extends ChangeNotifier {
 
   // ---------------------------------------------------------------- actions
   void rejectDrop() {
-    _audio.play(Sfx.error);
     _events.add(const InvalidMoveEvent());
   }
 
@@ -165,17 +163,14 @@ class GameProvider extends ChangeNotifier {
     _tray = [..._tray]..[slot] = null;
     _busy = true;
     _tilesChanged();
-    _audio.play(Sfx.place);
-    _audio.haptic();
+    _haptics.haptic();
     notifyListeners();
 
     await _delay(90);
     _combo = 0;
-    _biggestGroup = 0;
     for (final cell in placed) {
       await _resolve(cell);
     }
-    _praise();
     if (_tray.every((p) => p == null)) _dealTray();
     _endTurn();
   }
@@ -189,7 +184,6 @@ class GameProvider extends ChangeNotifier {
       if (group.length < mergeCount) return;
 
       _combo++;
-      _biggestGroup = math.max(_biggestGroup, group.length);
       final absorbed = <Tile>[];
       for (final c in group) {
         if (c == cell) continue;
@@ -200,8 +194,7 @@ class GameProvider extends ChangeNotifier {
         absorbed.add(t);
       }
       _tilesChanged();
-      _audio.merge(_combo);
-      _audio.haptic(_combo > 2 ? HapticStrength.medium : HapticStrength.light);
+      _haptics.haptic(_combo > 2 ? HapticStrength.medium : HapticStrength.light);
       notifyListeners();
 
       await _delay(140);
@@ -254,23 +247,6 @@ class GameProvider extends ChangeNotifier {
     return result;
   }
 
-  /// Cheers the player after a good move.
-  void _praise() {
-    if (_combo == 0) return;
-    final (int tier, List<String> words) = switch (_combo) {
-      >= 4 => (3, const ['UNBELIEVABLE!', 'INCREDIBLE!']),
-      3 => (2, const ['PERFECT!', 'AMAZING!']),
-      2 => (1, const ['EXCELLENT!', 'GREAT!']),
-      _ when _biggestGroup >= 4 => (1, const ['EXCELLENT!', 'GREAT!']),
-      _ => (0, const ['GOOD JOB!', 'NICE!', 'WELL DONE!']),
-    };
-    // Simple merges are cheered only now and then so it stays special.
-    if (tier == 0 && _rng.nextDouble() > 0.4) return;
-    final word = words[_rng.nextInt(words.length)];
-    _events.add(PraiseEvent(word, tier));
-    _audio.speak(word);
-  }
-
   void _checkGoal(int value) {
     if (value < _goal) return;
     while (value >= _goal) {
@@ -279,8 +255,7 @@ class GameProvider extends ChangeNotifier {
       _events.add(GoalReachedEvent(_goal, reward));
       _goal *= 2;
     }
-    _audio.play(Sfx.coin);
-    _audio.haptic(HapticStrength.heavy);
+    _haptics.haptic(HapticStrength.heavy);
   }
 
   void _checkLevel() {
@@ -290,7 +265,6 @@ class GameProvider extends ChangeNotifier {
       final reward = 5 + _level; // level 2 -> 7, level 10 -> 15
       _player.addDiamonds(reward);
       _events.add(LevelUpEvent(_level, reward));
-      _audio.play(Sfx.levelUp);
     }
   }
 
@@ -309,8 +283,7 @@ class GameProvider extends ChangeNotifier {
     if (_gameOver || _anyPieceFits()) return;
     _gameOver = true;
     _hammerMode = false;
-    _audio.play(Sfx.gameOver);
-    _audio.haptic(HapticStrength.heavy);
+    _haptics.haptic(HapticStrength.heavy);
     _events.add(const GameOverEvent());
   }
 
@@ -354,7 +327,6 @@ class GameProvider extends ChangeNotifier {
     _hammerMode = false;
     _dealTray();
     _checkGameOver();
-    _audio.play(Sfx.click);
     _save();
     notifyListeners();
   }
@@ -364,11 +336,9 @@ class GameProvider extends ChangeNotifier {
     if (_hammerMode) {
       _hammerMode = false;
     } else if (_board.isEmpty) {
-      _audio.play(Sfx.error);
       return;
     } else {
       _hammerMode = true;
-      _audio.play(Sfx.click);
     }
     notifyListeners();
   }
@@ -421,8 +391,7 @@ class GameProvider extends ChangeNotifier {
       removed.add(t);
     }
     _tilesChanged();
-    _audio.play(Sfx.smash);
-    _audio.haptic(HapticStrength.heavy);
+    _haptics.haptic(HapticStrength.heavy);
     notifyListeners();
     await _delay(360);
     for (final t in removed) {

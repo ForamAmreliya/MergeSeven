@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'core/ads/ads_service.dart';
-import 'core/services/audio_service.dart';
+import 'core/services/haptics_service.dart';
 import 'core/theme/app_theme.dart';
 import 'core/utils/app_info.dart';
 import 'providers/game_provider.dart';
@@ -21,21 +21,19 @@ Future<void> main() async {
 
   await AppInfo.load();
   final prefs = await SharedPreferences.getInstance();
-  final audio = AudioService();
-  audio.init(); // preloads in the background; sounds become available as they load
-
+  final haptics = HapticsService();
   final ads = AdsService();
-  runApp(MergeSevenApp(prefs: prefs, audio: audio, ads: ads));
-  // Consent + ad SDK start once the first frame is on screen.
+  runApp(MergeSevenApp(prefs: prefs, haptics: haptics, ads: ads));
+  // The ad SDK starts only once the first frame is on screen.
   WidgetsBinding.instance.addPostFrameCallback((_) => ads.init());
 }
 
 class MergeSevenApp extends StatefulWidget {
   final SharedPreferences prefs;
-  final AudioService audio;
+  final HapticsService haptics;
   final AdsService? ads;
 
-  const MergeSevenApp({super.key, required this.prefs, required this.audio, this.ads});
+  const MergeSevenApp({super.key, required this.prefs, required this.haptics, this.ads});
 
   @override
   State<MergeSevenApp> createState() => _MergeSevenAppState();
@@ -43,7 +41,7 @@ class MergeSevenApp extends StatefulWidget {
 
 class _MergeSevenAppState extends State<MergeSevenApp> with WidgetsBindingObserver {
   SharedPreferences get prefs => widget.prefs;
-  AudioService get audio => widget.audio;
+  HapticsService get haptics => widget.haptics;
   AdsService? get ads => widget.ads;
 
   @override
@@ -59,11 +57,6 @@ class _MergeSevenAppState extends State<MergeSevenApp> with WidgetsBindingObserv
   }
 
   @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state != AppLifecycleState.resumed) audio.stopAll();
-  }
-
-  @override
   void didChangePlatformBrightness() {
     ads?.setBrightness(WidgetsBinding.instance.platformDispatcher.platformBrightness);
   }
@@ -72,11 +65,11 @@ class _MergeSevenAppState extends State<MergeSevenApp> with WidgetsBindingObserv
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        Provider<AudioService>.value(value: audio),
+        Provider<HapticsService>.value(value: haptics),
         Provider<AdsService>(create: (_) => ads ?? AdsService()),
-        ChangeNotifierProvider(create: (_) => SettingsProvider(prefs, audio)),
+        ChangeNotifierProvider(create: (_) => SettingsProvider(prefs, haptics)),
         ChangeNotifierProvider(create: (_) => PlayerProvider(prefs)),
-        ChangeNotifierProvider(create: (context) => GameProvider(prefs, context.read<PlayerProvider>(), audio)),
+        ChangeNotifierProvider(create: (context) => GameProvider(prefs, context.read<PlayerProvider>(), haptics)),
       ],
       child: Selector<SettingsProvider, ThemeMode>(
         selector: (_, s) => s.themeMode,

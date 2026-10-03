@@ -160,12 +160,6 @@ class PauseDialog extends StatelessWidget {
               runSpacing: 10,
               children: [
                 _ToggleChip(
-                  icon: settings.sound ? Icons.volume_up_rounded : Icons.volume_off_rounded,
-                  label: 'Sound',
-                  on: settings.sound,
-                  onTap: () => settings.sound = !settings.sound,
-                ),
-                _ToggleChip(
                   icon: Icons.vibration_rounded,
                   label: 'Haptics',
                   on: settings.haptics,

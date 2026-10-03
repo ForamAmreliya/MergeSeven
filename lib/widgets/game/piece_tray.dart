@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../core/services/audio_service.dart';
+import '../../core/services/haptics_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../models/piece.dart';
 import '../../providers/game_provider.dart';
@@ -53,7 +53,7 @@ class _Slot extends StatelessWidget {
     if (game.hammerMode) game.toggleHammer();
     final box = context.findRenderObject() as RenderBox;
     drag.start(index, piece, pointer, box.localToGlobal(box.size.center(Offset.zero)));
-    context.read<AudioService>().haptic();
+    context.read<HapticsService>().haptic();
   }
 
   void _endDrag(BuildContext context) {
@@ -61,9 +61,7 @@ class _Slot extends StatelessWidget {
     final target = drag.end();
     if (target != null) {
       context.read<GameProvider>().place(index, target);
-    } else {
-      context.read<AudioService>().play(Sfx.error);
-    }
+    } else {}
   }
 
   @override

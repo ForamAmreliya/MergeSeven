@@ -7,24 +7,17 @@ import 'package:merge_seven/screens/game_screen.dart';
 import 'package:merge_seven/screens/settings_screen.dart';
 import 'package:merge_seven/widgets/board/board_view.dart';
 import 'package:provider/provider.dart';
-import 'package:merge_seven/core/services/audio_service.dart';
+import 'package:merge_seven/core/services/haptics_service.dart';
 import 'package:merge_seven/models/hex_coord.dart';
 import 'package:merge_seven/models/piece.dart';
 import 'package:merge_seven/providers/game_provider.dart';
 import 'package:merge_seven/providers/player_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-class _SilentAudio extends AudioService {
-  _SilentAudio() {
-    soundOn = false;
-    hapticsOn = false;
-  }
-}
-
 Future<GameProvider> _game([Map<String, Object?>? saved]) async {
   SharedPreferences.setMockInitialValues({if (saved != null) 'savedGame': jsonEncode(saved)});
   final prefs = await SharedPreferences.getInstance();
-  return GameProvider(prefs, PlayerProvider(prefs), _SilentAudio());
+  return GameProvider(prefs, PlayerProvider(prefs), HapticsService());
 }
 
 void main() {
@@ -290,7 +283,7 @@ void main() {
 
     // Simulate reopening the app: a fresh provider with the same storage.
     final prefs = await SharedPreferences.getInstance();
-    final reopened = GameProvider(prefs, PlayerProvider(prefs), _SilentAudio());
+    final reopened = GameProvider(prefs, PlayerProvider(prefs), HapticsService());
     reopened.newGame();
     expect(reopened.level, 6);
     expect(reopened.goal, 256);
@@ -303,7 +296,7 @@ void main() {
     tester.view.physicalSize = const Size(390, 844) * 3;
     tester.view.devicePixelRatio = 3;
     addTearDown(tester.view.reset);
-    await tester.pumpWidget(MergeSevenApp(prefs: prefs, audio: _SilentAudio()));
+    await tester.pumpWidget(MergeSevenApp(prefs: prefs, haptics: HapticsService()));
     await tester.pump(const Duration(milliseconds: 100));
     tester
         .state<NavigatorState>(find.byType(Navigator).first)
@@ -339,7 +332,7 @@ void main() {
     tester.view.physicalSize = const Size(390, 844) * 3;
     tester.view.devicePixelRatio = 3;
     addTearDown(tester.view.reset);
-    await tester.pumpWidget(MergeSevenApp(prefs: prefs, audio: _SilentAudio()));
+    await tester.pumpWidget(MergeSevenApp(prefs: prefs, haptics: HapticsService()));
     await tester.pump(const Duration(milliseconds: 100));
     tester
         .state<NavigatorState>(find.byType(Navigator).first)

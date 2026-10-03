@@ -23,90 +23,84 @@ class SettingsScreen extends StatelessWidget {
     final s = Responsive.of(context).scale;
     return Scaffold(
       body: GameBackground(
-        animate: false,
         child: SafeArea(
           child: Center(
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 520),
               child: ListView(
-                padding: EdgeInsets.symmetric(horizontal: 20 * s, vertical: 12 * s),
+                // No side padding: the native ad reaches both edges.
+                padding: EdgeInsets.symmetric(vertical: 12 * s),
                 children: [
-                  _TitleBar(title: 'Settings', scale: s),
-                  SizedBox(height: 20 * s),
-                  Consumer<SettingsProvider>(
-                    builder: (context, settings, _) => _Section(
-                      title: 'Game',
+                  Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 20 * s),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        _SwitchRow(
-                          icon: Icons.volume_up_rounded,
-                          color: const Color(0xFF2C7BF2),
-                          label: 'Sound effects',
-                          value: settings.sound,
-                          onChanged: (v) => settings.sound = v,
+                        _TitleBar(title: 'Settings', scale: s),
+                        SizedBox(height: 20 * s),
+                        Consumer<SettingsProvider>(
+                          builder: (context, settings, _) => _Section(
+                            title: 'Game',
+                            children: [
+                              _SwitchRow(
+                                icon: Icons.vibration_rounded,
+                                color: const Color(0xFF12A67A),
+                                label: 'Vibration',
+                                value: settings.haptics,
+                                onChanged: (v) => settings.haptics = v,
+                              ),
+                            ],
+                          ),
                         ),
-                        _SwitchRow(
-                          icon: Icons.record_voice_over_rounded,
-                          color: const Color(0xFFD62FB4),
-                          label: 'Voice cheers',
-                          value: settings.voice,
-                          onChanged: (v) => settings.voice = v,
+                        SizedBox(height: 16 * s),
+                        _Section(
+                          title: 'Theme',
+                          children: [_ThemePicker(scale: s)],
                         ),
-                        _SwitchRow(
-                          icon: Icons.vibration_rounded,
-                          color: const Color(0xFF12A67A),
-                          label: 'Vibration',
-                          value: settings.haptics,
-                          onChanged: (v) => settings.haptics = v,
+                        SizedBox(height: 16 * s),
+                        _Section(
+                          title: 'More',
+                          children: [
+                            _ActionRow(
+                              icon: Icons.lightbulb_rounded,
+                              color: const Color(0xFFFF9500),
+                              label: 'How to play',
+                              onTap: () => Navigator.of(context).push(fadeRoute(const HowToPlayScreen())),
+                            ),
+                            _ActionRow(
+                              icon: Icons.privacy_tip_rounded,
+                              color: const Color(0xFF12A67A),
+                              label: 'Privacy Policy',
+                              onTap: () => Navigator.of(context).push(fadeRoute(const PrivacyPolicyScreen())),
+                            ),
+                            // Required by Google in regions with consent laws (EEA, UK).
+                            ValueListenableBuilder<bool>(
+                              valueListenable: context.read<AdsService>().privacyOptionsRequired,
+                              builder: (context, required, _) => required
+                                  ? _ActionRow(
+                                      icon: Icons.tune_rounded,
+                                      color: const Color(0xFF2C7BF2),
+                                      label: 'Privacy choices (ads)',
+                                      onTap: () => context.read<AdsService>().showPrivacyOptions(),
+                                    )
+                                  : const SizedBox.shrink(),
+                            ),
+                            _ActionRow(
+                              icon: Icons.delete_forever_rounded,
+                              color: const Color(0xFFF0306A),
+                              label: 'Reset progress',
+                              onTap: () => _confirmReset(context),
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: 28 * s),
+                        Center(
+                          child: Text(
+                            'MergeSeven ${AppInfo.label}'.trim(),
+                            style: TextStyle(color: context.palette.textMuted, fontWeight: FontWeight.w500),
+                          ),
                         ),
                       ],
-                    ),
-                  ),
-                  SizedBox(height: 16 * s),
-                  _Section(
-                    title: 'Theme',
-                    children: [_ThemePicker(scale: s)],
-                  ),
-                  SizedBox(height: 16 * s),
-                  _Section(
-                    title: 'More',
-                    children: [
-                      _ActionRow(
-                        icon: Icons.lightbulb_rounded,
-                        color: const Color(0xFFFF9500),
-                        label: 'How to play',
-                        onTap: () => Navigator.of(context).push(fadeRoute(const HowToPlayScreen())),
-                      ),
-                      _ActionRow(
-                        icon: Icons.privacy_tip_rounded,
-                        color: const Color(0xFF12A67A),
-                        label: 'Privacy Policy',
-                        onTap: () => Navigator.of(context).push(fadeRoute(const PrivacyPolicyScreen())),
-                      ),
-                      // Required by Google in regions with consent laws (EEA, UK).
-                      ValueListenableBuilder<bool>(
-                        valueListenable: context.read<AdsService>().privacyOptionsRequired,
-                        builder: (context, required, _) => required
-                            ? _ActionRow(
-                                icon: Icons.tune_rounded,
-                                color: const Color(0xFF2C7BF2),
-                                label: 'Privacy choices (ads)',
-                                onTap: () => context.read<AdsService>().showPrivacyOptions(),
-                              )
-                            : const SizedBox.shrink(),
-                      ),
-                      _ActionRow(
-                        icon: Icons.delete_forever_rounded,
-                        color: const Color(0xFFF0306A),
-                        label: 'Reset progress',
-                        onTap: () => _confirmReset(context),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: 28 * s),
-                  Center(
-                    child: Text(
-                      'MergeSeven ${AppInfo.label}'.trim(),
-                      style: TextStyle(color: context.palette.textMuted, fontWeight: FontWeight.w500),
                     ),
                   ),
                   // Native ad; takes no space until it has loaded.
