@@ -33,11 +33,9 @@ class AdsService {
   /// Loaded ads the screens show. Null until an ad is ready.
   final ValueNotifier<BannerAd?> banner = ValueNotifier(null);
   final ValueNotifier<NativeAd?> nativeMedium = ValueNotifier(null);
-  final ValueNotifier<NativeAd?> nativeSmall = ValueNotifier(null);
 
   bool _bannerLoading = false;
-  bool _nativeMediumLoading = false;
-  bool _nativeSmallLoading = false;
+  bool _nativeLoading = false;
   Brightness _brightness = Brightness.dark;
   Timer? _bannerRetry;
   Timer? _nativeRetry;
@@ -93,8 +91,7 @@ class AdsService {
     ready.value = true;
     _loadRewarded();
     _loadBanner();
-    _loadNative(compact: false);
-    _loadNative(compact: true);
+    _loadNative();
   }
 
   /// Keeps the native ad templates in step with the app theme. Reloads them
@@ -104,8 +101,7 @@ class AdsService {
     _brightness = brightness;
     if (!ready.value) return;
     _disposeNative();
-    _loadNative(compact: false);
-    _loadNative(compact: true);
+    _loadNative();
   }
 
   AppPalette get _palette => _brightness == Brightness.dark ? AppPalette.dark : AppPalette.light;
@@ -143,20 +139,20 @@ class AdsService {
     });
   }
 
-  void _loadNative({required bool compact}) {
-    final slot = compact ? nativeSmall : nativeMedium;
-    if (!ready.value || slot.value != null) return;
-    if (compact ? _nativeSmallLoading : _nativeMediumLoading) return;
-    compact ? _nativeSmallLoading = true : _nativeMediumLoading = true;
+  void _loadNative() {
+    if (!ready.value || nativeMedium.value != null || _nativeLoading) return;
+    _nativeLoading = true;
     _nativeRetry?.cancel();
     final p = _palette;
     NativeAd(
       adUnitId: AdIds.native,
       request: const AdRequest(),
       nativeTemplateStyle: NativeTemplateStyle(
-        templateType: compact ? TemplateType.small : TemplateType.medium,
+        templateType: TemplateType.medium,
         mainBackgroundColor: p.card,
-        cornerRadius: 16,
+        // Square: the ad spans the full width, so rounded corners would leave
+        // gaps against the screen edges.
+        cornerRadius: 0,
         callToActionTextStyle: NativeTemplateTextStyle(
           textColor: const Color(0xFFFFFFFF),
           backgroundColor: p.accent,
@@ -169,16 +165,14 @@ class AdsService {
       ),
       listener: NativeAdListener(
         onAdLoaded: (ad) {
-          compact ? _nativeSmallLoading = false : _nativeMediumLoading = false;
-          slot.value = ad as NativeAd;
+          _nativeLoading = false;
+          nativeMedium.value = ad as NativeAd;
         },
         onAdFailedToLoad: (ad, error) {
-          compact ? _nativeSmallLoading = false : _nativeMediumLoading = false;
+          _nativeLoading = false;
           debugPrint('Native ad failed to load: ${error.message}');
           ad.dispose();
-          _nativeRetry = Timer(const Duration(seconds: 45), () {
-            _loadNative(compact: compact);
-          });
+          _nativeRetry = Timer(const Duration(seconds: 45), _loadNative);
         },
       ),
     ).load();
@@ -186,17 +180,7 @@ class AdsService {
 
   void _disposeNative() {
     nativeMedium.value?.dispose();
-    nativeSmall.value?.dispose();
     nativeMedium.value = null;
-    nativeSmall.value = null;
-  }
-
-  void dispose() {
-    _bannerRetry?.cancel();
-    _nativeRetry?.cancel();
-    banner.value?.dispose();
-    _disposeNative();
-    _rewarded?.dispose();
   }
 
   // ------------------------------------------------------------- loading

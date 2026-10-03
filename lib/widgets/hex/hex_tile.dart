@@ -47,7 +47,7 @@ class TileImageCache {
   /// Builds the tile images for one size ahead of time, a couple per frame so
   /// the game never stutters when a new number first appears.
   static void precache(double radius, double dpr, {int upTo = 8192}) {
-    final key = math.max(4, (radius * dpr).round());
+    final key = _pixelSize(radius, dpr).toInt();
     if (!_precached.add(key)) return;
     var value = 2;
     void step() {
@@ -62,8 +62,12 @@ class TileImageCache {
     SchedulerBinding.instance.addPostFrameCallback((_) => step());
   }
 
+  /// Pixel size used as the cache key, rounded to 2px steps so a layout that
+  /// shifts by a fraction reuses the pictures it already has.
+  static double _pixelSize(double radius, double dpr) => math.max(4, ((radius * dpr) / 2).round() * 2).toDouble();
+
   static ui.Image get(int value, double radius, double dpr) {
-    final rPx = math.max(4, (radius * dpr).round()).toDouble();
+    final rPx = _pixelSize(radius, dpr);
     final key = '$value@${rPx.toInt()}';
     final cached = _images[key];
     if (cached != null) return cached;

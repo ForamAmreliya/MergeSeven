@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/ads/ads_service.dart';
-import '../../core/services/audio_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../providers/game_provider.dart';
 import '../../providers/player_provider.dart';
@@ -134,7 +133,6 @@ Future<bool> payWithDiamondsOrAd(
   switch (choice) {
     case _Pay.diamonds:
       if (!context.read<PlayerProvider>().trySpend(cost)) return false;
-      context.read<AudioService>().play(Sfx.coin);
       return true;
     case _Pay.ad:
       return context.read<AdsService>().rewardGate(context);

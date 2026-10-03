@@ -53,13 +53,6 @@ class LevelUpEvent extends GameEvent {
   const LevelUpEvent(this.level, this.diamonds);
 }
 
-/// Cheer text after a good move; higher [tier] means a better move.
-class PraiseEvent extends GameEvent {
-  final String text;
-  final int tier;
-  const PraiseEvent(this.text, this.tier);
-}
-
 class InvalidMoveEvent extends GameEvent {
   const InvalidMoveEvent();
 }

@@ -31,7 +31,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
           'To let you continue playing, the game saves a few things only on your phone:\n'
           '• Your current game, best score, top tile and level\n'
           '• Your diamonds and number of games played\n'
-          '• Your settings (sound, voice cheers, vibration, theme)\n\n'
+          '• Your settings (vibration, theme)\n\n'
           'We never receive this data. "Reset progress" in Settings clears your scores, diamonds and '
           'stats, and uninstalling the app removes everything.',
     ),
@@ -95,7 +95,6 @@ class PrivacyPolicyScreen extends StatelessWidget {
     final s = Responsive.of(context).scale;
     return Scaffold(
       body: GameBackground(
-        animate: false,
         child: SafeArea(
           child: Center(
             child: ConstrainedBox(

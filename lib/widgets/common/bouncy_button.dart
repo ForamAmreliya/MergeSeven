@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../core/services/audio_service.dart';
+import '../../core/services/haptics_service.dart';
 
 /// Wraps any widget with a springy press effect, click sound and haptic.
 class BouncyButton extends StatefulWidget {
@@ -32,9 +32,7 @@ class _BouncyButtonState extends State<BouncyButton> {
       onTapUp: enabled ? (_) => _set(false) : null,
       onTap: enabled
           ? () {
-              final audio = context.read<AudioService>();
-              if (widget.sound) audio.play(Sfx.click);
-              audio.haptic();
+              context.read<HapticsService>().haptic();
               widget.onTap!();
             }
           : null,

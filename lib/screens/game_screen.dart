@@ -19,7 +19,6 @@ import '../widgets/game/boosters.dart';
 import '../widgets/game/game_dialogs.dart';
 import '../widgets/game/hud.dart';
 import '../widgets/game/piece_tray.dart';
-import '../widgets/common/praise_text.dart';
 
 class GameScreen extends StatefulWidget {
   const GameScreen({super.key});
@@ -32,7 +31,6 @@ class _GameScreenState extends State<GameScreen> {
   final DragController _drag = DragController();
   final _confetti = GlobalKey<ConfettiOverlayState>();
   final _banner = GlobalKey<GameBannerState>();
-  final _praise = GlobalKey<PraiseTextState>();
   StreamSubscription<GameEvent>? _sub;
   bool _dialogOpen = false;
 
@@ -73,8 +71,6 @@ class _GameScreenState extends State<GameScreen> {
           icon: Icons.keyboard_double_arrow_up_rounded,
           colors: const [Color(0xFF9B7BFF), Color(0xFF14C3F0)],
         );
-      case PraiseEvent(:final text, :final tier):
-        _praise.currentState?.show(text, tier);
       case GameOverEvent():
         Future.delayed(const Duration(milliseconds: 700), () {
           if (mounted) _showGameOver();
@@ -214,14 +210,6 @@ class _GameScreenState extends State<GameScreen> {
           right: 0,
           top: 0,
           child: IgnorePointer(child: _ModeHint(scale: s)),
-        ),
-        // Praise words swipe across the top of the board, under the score.
-        Positioned(
-          left: 0,
-          right: 0,
-          top: -4 * s,
-          height: 84 * s,
-          child: PraiseText(key: _praise),
         ),
       ],
     );

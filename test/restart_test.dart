@@ -2,7 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:merge_seven/core/services/audio_service.dart';
+import 'package:merge_seven/core/services/haptics_service.dart';
 import 'package:merge_seven/main.dart';
 import 'package:merge_seven/providers/game_provider.dart';
 import 'package:merge_seven/screens/game_screen.dart';
@@ -14,7 +14,7 @@ Future<GameProvider> openGame(WidgetTester tester, Map<String, Object> saved) as
   final prefs = await SharedPreferences.getInstance();
   tester.view.physicalSize = const Size(390, 844) * 3;
   tester.view.devicePixelRatio = 3;
-  await tester.pumpWidget(MergeSevenApp(prefs: prefs, audio: AudioService()..soundOn = false));
+  await tester.pumpWidget(MergeSevenApp(prefs: prefs, haptics: HapticsService()));
   await tester.pump(const Duration(milliseconds: 100));
   tester
       .state<NavigatorState>(find.byType(Navigator).first)

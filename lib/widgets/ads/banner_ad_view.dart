@@ -20,27 +20,24 @@ class BannerAdView extends StatelessWidget {
       top: false,
       child: ValueListenableBuilder<BannerAd?>(
         valueListenable: context.read<AdsService>().banner,
-        builder: (context, ad, _) => AnimatedSize(
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
-          alignment: Alignment.bottomCenter,
-          child: ad == null
-              ? const SizedBox(width: double.infinity)
-              : Padding(
-                  padding: const EdgeInsets.only(top: 4),
-                  child: SizedBox(
-                    width: double.infinity,
-                    height: ad.size.height.toDouble(),
-                    child: Center(
-                      child: SizedBox(
-                        width: ad.size.width.toDouble(),
-                        height: ad.size.height.toDouble(),
-                        child: AdWidget(ad: ad),
-                      ),
+        // No size animation on purpose: a growing bar would re-lay-out and
+        // repaint the whole game screen on every frame.
+        builder: (context, ad, _) => ad == null
+            ? const SizedBox(width: double.infinity)
+            : Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: SizedBox(
+                  width: double.infinity,
+                  height: ad.size.height.toDouble(),
+                  child: Center(
+                    child: SizedBox(
+                      width: ad.size.width.toDouble(),
+                      height: ad.size.height.toDouble(),
+                      child: AdWidget(ad: ad),
                     ),
                   ),
                 ),
-        ),
+              ),
       ),
     );
   }
